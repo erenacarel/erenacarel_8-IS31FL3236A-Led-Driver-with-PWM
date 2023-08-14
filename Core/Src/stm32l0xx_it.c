@@ -23,6 +23,25 @@
 #include "stm32l0xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "usr_general.h"
+
+#define _POWER_BUTTON_IRQ             EXTI->PR & EXTI_PR_PIF0              //EXTI->PR &EXTI_PR_PIF0
+#define _POWER_PIN_0()                HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_0)
+#define _POWER_PIN_1()                HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_1)
+#define _POWER_BUTTON_ICLR()          EXTI->PR |= EXTI_PR_PIF0
+
+#define _BUTTON_PRESS_STATE           1
+
+extern uint8_t g_button1PressedOkFlg1;
+extern uint8_t g_button2PressedOkFlg2;
+
+extern uint8_t g_pressedOccuredFlg1;
+extern uint8_t g_pressedOccuredFlg2;
+
+extern uint32_t g_button1PressedTimeCnt;
+extern uint32_t g_button2PressedTimeCnt;
+
+extern S_INITIAL_VALUE m_sInitialParameter;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,7 +75,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -160,6 +179,31 @@ void RCC_CRS_IRQHandler(void)
 void EXTI0_1_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_1_IRQn 0 */
+  if(EXTI->PR & EXTI_PR_PIF0)
+  {
+    if(HAL_GPIO_ReadPin(m_sInitialParameter.pButton1Port, m_sInitialParameter.button1Pin) == g_button1PressedOkFlg1)
+    {
+      g_pressedOccuredFlg1 = 1;
+    }
+    else
+    {
+      g_pressedOccuredFlg1 = 0;
+    }
+    EXTI->PR |= EXTI_PR_PIF0;
+  }
+  
+  if(EXTI->PR & EXTI_PR_PIF1)
+  {
+    if(HAL_GPIO_ReadPin(m_sInitialParameter.pButton2Port, m_sInitialParameter.button2Pin) == g_button2PressedOkFlg2)
+    {
+      g_pressedOccuredFlg2 = 1;
+    }
+    else
+    {
+      g_pressedOccuredFlg2 = 0;
+    }
+    EXTI->PR |= EXTI_PR_PIF1;
+  }
 
   /* USER CODE END EXTI0_1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
@@ -169,7 +213,55 @@ void EXTI0_1_IRQHandler(void)
   /* USER CODE END EXTI0_1_IRQn 1 */
 }
 
+/**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
 /* USER CODE BEGIN 1 */
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if(htim->Instance == TIM2)
+  {
+    if(g_pressedOccuredFlg1)
+    { 
+      g_button1PressedTimeCnt++;
+      if(g_button1PressedTimeCnt >= 50)
+      {
+        g_button1PressedOkFlg1 = 1;
+        g_pressedOccuredFlg1 = 0;
+      }
+    }
+    else
+    {
+      g_button1PressedTimeCnt = 0;
+    }
+
+
+    if(g_pressedOccuredFlg2)
+    {
+      g_button2PressedTimeCnt++;
+      if(g_button2PressedTimeCnt >= 50)
+      {
+        g_button2PressedOkFlg2 = 1;
+        g_pressedOccuredFlg2 = 0; 
+      }
+    }
+    else
+    {
+      g_button2PressedTimeCnt = 0;
+    }
+  }
+}
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -1,10 +1,13 @@
+/*
+ * usr_rgb_led.c
+ *
+ *  Created on: August 9, 2023
+ *      Author: ERENACAREL
+ */
+
 #include "usr_general.h"
 
-#define _io static
-#define _iov static volatile
-
 #define DEVICE_ADDRESS      0x3C
-
 
 extern uint8_t PWM_Gamma64[64];
 extern uint8_t PWM_Bright64[64];
@@ -14,13 +17,12 @@ extern uint8_t PWM3[64];
 extern uint16_t PWM_RGB[512];
 extern uint16_t PWM5[288];
 
-
-_io void UsrWriteI2CRegister(uint8_t DeviceAddress, uint8_t RegisterAddress, uint8_t data);
-
+// _io S_INITIAL_VALUE m_sInitialParameter;
+extern S_INITIAL_VALUE m_sInitialParameter;
 
 _io void UsrWriteI2CRegister(uint8_t DeviceAddress, uint8_t RegisterAddress, uint8_t data)
 { 
-    HAL_I2C_Mem_Write(&hi2c1, (DeviceAddress << 1), RegisterAddress, 1, &data, 1, 10);
+    HAL_I2C_Mem_Write(m_sInitialParameter.hi2c, (DeviceAddress << 1), RegisterAddress, 1, &data, 1, 10);
 }
 
 
@@ -84,21 +86,21 @@ void UsrSetFreq(uint8_t freq)
 void UsrI2CScan(void)
 {
     uint16_t i = 0, ret;
-    uint8_t data[64] = {0};
-    uint8_t StartMSG[] = "Starting I2C Scanning: \r\n";
+    // uint8_t data[64] = {0};
+    // uint8_t StartMSG[] = "Starting I2C Scanning: \r\n";
 
-    HAL_UART_Transmit(&huart1, StartMSG, sizeof(StartMSG), 10000);
+    // HAL_UART_Transmit(&huart1, StartMSG, sizeof(StartMSG), 10000);
     for(i=1; i<128; i++)
     {
         ret = HAL_I2C_IsDeviceReady(&hi2c1, (i << 1), 2, 2);
         if(ret == HAL_OK)
         {
             // HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_SET);
-            sprintf((char*)data, "iste adres: 0x%X\n", i);
-            HAL_UART_Transmit(&huart1, data, sizeof(data), 10000);
+            // sprintf((char*)data, "iste adres: 0x%X\n", i);
+            // HAL_UART_Transmit(&huart1, data, sizeof(data), 10000);
         }
     }
-    HAL_UART_Transmit(&huart1, data, sprintf((char*)data, "islem bitmistir...\n"), 10000);    
+    // HAL_UART_Transmit(&huart1, data, sprintf((char*)data, "islem bitmistir...\n"), 10000);    
 }
 
 
@@ -122,7 +124,7 @@ void UsrSetStopMode(void)
 
 void UsrSetLEDOnOff(uint8_t channel, uint8_t OnOff)
 {
-    uint8_t data[64] = {0};
+    // uint8_t data[64] = {0};
 
     if(OnOff == 0x00 || OnOff == 0x01)
     {
@@ -130,7 +132,7 @@ void UsrSetLEDOnOff(uint8_t channel, uint8_t OnOff)
     }
     else
     {
-        HAL_UART_Transmit(&huart1, data, sprintf((char*)data, "Illegal LED OnOff value selected!\n"), 10000);
+        // HAL_UART_Transmit(&huart1, data, sprintf((char*)data, "Illegal LED OnOff value selected!\n"), 10000);
     }    
 }
 
@@ -147,7 +149,7 @@ void UsrAllLEDFadeOnRed(uint8_t speed)
         UsrPWMUpdate();
         HAL_Delay(speed);
     }
-    HAL_Delay(500);
+    // HAL_Delay(500);
 }
 
 
@@ -162,7 +164,7 @@ void UsrAllLEDFadeOffRed(uint8_t speed)         // fade speed in milliseconds
         UsrPWMUpdate();                          //update PWM & control registers
         HAL_Delay(speed); 
     } 
-    HAL_Delay(500);                           //keep 0.5s
+    //HAL_Delay(500);                           //keep 0.5s
 }
 
 
@@ -177,7 +179,7 @@ void UsrAllLEDFadeOnBlue(uint8_t speed)
         UsrPWMUpdate();
         HAL_Delay(speed);
     }
-    HAL_Delay(500);
+    // HAL_Delay(500);
 }
 
 
@@ -192,7 +194,7 @@ void UsrAllLEDFadeOffBlue(uint8_t speed)             // fade speed in millisecon
         UsrPWMUpdate();                                 //update PWM & control registers
         HAL_Delay(speed); 
     } 
-    HAL_Delay(500); //keep 0.5s
+    // HAL_Delay(500); //keep 0.5s
 }
 
 
@@ -207,7 +209,7 @@ void UsrAllLEDFadeOnGreen(uint8_t speed)
         UsrPWMUpdate();
         HAL_Delay(speed);
     }
-    HAL_Delay(500);
+    // HAL_Delay(500);
 }
 
 
@@ -222,7 +224,151 @@ void UsrAllLEDFadeOffGreen(uint8_t speed)            // fade speed in millisecon
         UsrPWMUpdate();                                 //update PWM & control registers
         HAL_Delay(speed); 
     } 
-    HAL_Delay(500); //keep 0.5s
+    // HAL_Delay(500); //keep 0.5s
+}
+
+
+void UsrAllLEDFadeOnBrown(uint8_t speed)
+{
+    for(uint8_t j=0; j<=63; j++)
+    {
+        for(uint8_t i=0x02; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM     PWM_Gamma64[j]
+        }
+        for(uint8_t i=0x03; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }        
+        UsrPWMUpdate();
+        HAL_Delay(speed);
+    }
+    // HAL_Delay(500);
+}
+
+
+
+void UsrAllLEDFadeOffBrown(uint8_t speed)            // fade speed in milliseconds
+{
+    for (uint8_t j=63; j>0; j--)                     // all LED breath falling
+    {
+        for(uint8_t i=0x02; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }
+        for(uint8_t i=0x03; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }
+        UsrPWMUpdate();                                 //update PWM & control registers
+        HAL_Delay(speed); 
+    } 
+    // HAL_Delay(500); //keep 0.5s
+}
+
+
+void UsrAllLEDFadeOnCyan(uint8_t speed)
+{
+    for(uint8_t j=0; j<=63; j++)
+    {
+        for(uint8_t i=0x01; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM     PWM_Gamma64[j]
+        }
+        for(uint8_t i=0x02; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }        
+        UsrPWMUpdate();
+        HAL_Delay(speed);
+    }
+    // HAL_Delay(500);
+}
+
+
+void UsrAllLEDFadeOffCyan(uint8_t speed)            // fade speed in milliseconds
+{
+    for (uint8_t j=63; j>0; j--)                     // all LED breath falling
+    {
+        for(uint8_t i=0x01; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }
+        for(uint8_t i=0x02; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }
+        UsrPWMUpdate();                                 //update PWM & control registers
+        HAL_Delay(speed); 
+    } 
+    // HAL_Delay(500); //keep 0.5s
+}
+
+void UsrAllLEDFadeOnPurple(uint8_t speed)
+{
+    for(uint8_t j=0; j<=63; j++)
+    {
+        for(uint8_t i=0x01; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM     PWM_Gamma64[j]
+        }
+        for(uint8_t i=0x03; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }        
+        UsrPWMUpdate();
+        HAL_Delay(speed);
+    }
+    // HAL_Delay(500);
+}
+
+
+void UsrAllLEDFadeOffPurple(uint8_t speed)            // fade speed in milliseconds
+{
+    for (uint8_t j=63; j>0; j--)                     // all LED breath falling
+    {
+        for(uint8_t i=0x01; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }
+        for(uint8_t i=0x03; i<=0x24; i+=3)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }
+        UsrPWMUpdate();                                 //update PWM & control registers
+        HAL_Delay(speed); 
+    } 
+    // HAL_Delay(500); //keep 0.5s
+}
+
+
+void UsrAllLEDFadeOnWhite(uint8_t speed)
+{
+    for(uint8_t j=0; j<=63; j++)
+    {
+        for(uint8_t i=0x01; i<=0x24; i++)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM     PWM_Gamma64[j]
+        }       
+        UsrPWMUpdate();
+        HAL_Delay(speed);
+    }
+    // HAL_Delay(500);
+}
+
+
+void UsrAllLEDFadeOffWhite(uint8_t speed)            // fade speed in milliseconds
+{
+    for (uint8_t j=63; j>0; j--)                     // all LED breath falling
+    {
+        for(uint8_t i=0x01; i<=0x24; i++)
+        {
+            UsrSetPWM(i, PWM_Bright64[j]);               //set all PWM       PWM_Gamma64[j]
+        }
+        UsrPWMUpdate();                                 //update PWM & control registers
+        HAL_Delay(speed); 
+    } 
+    // HAL_Delay(500); //keep 0.5s
 }
 
 
@@ -254,6 +400,9 @@ void UsrAllLEDRainbowMode1(uint8_t speed)
     }
     
 }
+
+
+
 void UsrAllLEDRainbowMode2(uint8_t speed)
 {
     for(uint8_t j=0; j<24; j++)
@@ -279,8 +428,8 @@ void UsrAllLEDRainbowMode2(uint8_t speed)
 
         HAL_Delay(speed);
     }
-}
 
+}
 
 
 void UsrAllLEDRainbowMode3(uint8_t speed)
@@ -328,13 +477,12 @@ void UsrAllLEDRainbowMode3(uint8_t speed)
 
         HAL_Delay(speed);
     }
-    
+
 }
 
 
 void UsrAllLEDRainbowMode4(uint8_t speed)
 {
-
     for(uint8_t j=0; j<36; j++)
     {
         UsrWriteI2CRegister(DEVICE_ADDRESS, IS31FL3236A_PWM02, PWM2[j+4]);
@@ -359,7 +507,8 @@ void UsrAllLEDRainbowMode4(uint8_t speed)
         UsrPWMUpdate();
 
         HAL_Delay(speed);
-    }    
+    }  
+
 }
 
 
@@ -404,6 +553,7 @@ void UsrAllLEDRainbowMode5(uint8_t speed)
 
         HAL_Delay(speed);
     }    
+
 }
 
 
@@ -467,5 +617,6 @@ void UsrAllLEDRainbowMode6(uint8_t speed)
         UsrPWMUpdate();
 
         HAL_Delay(speed);
-    }    
+    }
+
 }

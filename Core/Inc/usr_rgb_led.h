@@ -1,5 +1,14 @@
+/*
+ * usr_rgb_led.h
+ *
+ *  Created on: August 9, 2023
+ *      Author: ERENACAREL
+ */
+
 #ifndef __USR_RGB_LED_H
 #define __USR_RGB_LED_H
+
+#include "usr_general.h"
 
 #define IS31FL3236A_SD      0x00
 
@@ -89,7 +98,7 @@
 void UsrPowerDown(void);
 void UsrReset(void);
 void UsrPowerUp(void);
-void UsrInit(uint8_t freq, uint8_t outCurrent);
+void UsrInit(uint8_t m_freq, uint8_t m_outCurrent);
 void UsrSetPWM(uint8_t channel, uint8_t PWMLevel);
 void UsrSetFreq(uint8_t freq);
 void UsrI2CScan(void);
@@ -105,7 +114,14 @@ void UsrAllLEDFadeOffBlue(uint8_t speed);
 void UsrAllLEDFadeOnBlue(uint8_t speed);
 void UsrAllLEDFadeOffRed(uint8_t speed);
 void UsrAllLEDFadeOnRed(uint8_t speed);
-
+void UsrAllLEDFadeOffBrown(uint8_t speed);
+void UsrAllLEDFadeOnBrown(uint8_t speed);
+void UsrAllLEDFadeOffCyan(uint8_t speed);
+void UsrAllLEDFadeOnCyan(uint8_t speed);
+void UsrAllLEDFadeOffPurple(uint8_t speed);
+void UsrAllLEDFadeOnPurple(uint8_t speed);
+void UsrAllLEDFadeOffWhite(uint8_t speed);
+void UsrAllLEDFadeOnWhite(uint8_t speed);
 
 void UsrAllLEDRainbowMode1(uint8_t speed);
 void UsrAllLEDRainbowMode2(uint8_t speed);
@@ -114,5 +130,30 @@ void UsrAllLEDRainbowMode4(uint8_t speed);
 void UsrAllLEDRainbowMode5(uint8_t speed);
 void UsrAllLEDRainbowMode6(uint8_t speed);
 
+typedef struct S_INITIAL_VALUE_TAG
+{
+    UART_HandleTypeDef *pUart;
+
+    TIM_HandleTypeDef *htim;
+
+    I2C_HandleTypeDef *hi2c;
+
+    GPIO_TypeDef *pButton1Port;
+    GPIO_TypeDef *pButton2Port;
+    GPIO_TypeDef *pIs31InitialPort; 
+
+    int is31Pin;
+
+    int button1Pin;
+    int button2Pin;
+
+    uint8_t m_freq;
+    uint8_t m_outCurrent;
+
+    // uint16_t DeviceAddress;
+
+}S_INITIAL_VALUE;
+
+extern S_INITIAL_VALUE m_sInitialParameter;
 
 #endif // !__USR_

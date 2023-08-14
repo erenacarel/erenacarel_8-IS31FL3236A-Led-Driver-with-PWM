@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usr_general.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,14 +43,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t freq = 22;          // set PWM frequency, either 3 kHz (default) or 22 kHz allowed
-uint8_t outCurrent = 0x00;  // choices are 0x00 (IMax = 16 mA), 0x01 (IMax/2), 0x02 (IMax/3), and 0x03 (IMax/4)
-
-uint16_t count1, count2, count3 = 0;
-uint32_t currentMillis = 0;
-uint32_t previousMillis = 0;
-
-uint8_t buffer[64];
 
 /* USER CODE END PV */
 
@@ -61,32 +54,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  currentMillis = HAL_GetTick();
-  if(GPIO_Pin == GPIO_PIN_0 && (currentMillis - previousMillis > 1000))
-  {
-    count1 = count1 + 1;
-    if(count1 > 3)
-    {
-      count1 = 0;
-    }
-    // HAL_UART_Transmit(&huart1, buffer, sprintf(buffer, "Button 1 aktif ve count1: %d\n", count1), 10);
-    previousMillis = currentMillis;
-  }
 
-  if(GPIO_Pin == GPIO_PIN_1 && (currentMillis - previousMillis > 500))
-  {
-    count2 = count2 + 15;
-    if(count2 > 270)
-    {
-      count2 = 0;
-    }
-    // HAL_UART_Transmit(&huart1, buffer, sprintf(buffer, "Button 2 aktif ve count2: %d\n", count2), 10);
-    previousMillis = currentMillis;
-  }
-
-}
 /* USER CODE END 0 */
 
 /**
@@ -119,100 +87,23 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_USART1_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET);
   
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  UsrI2CScan();
-  UsrInit(freq, outCurrent);
-  UsrSetRunMode();
+  
+  UsrSystemInitial(&m_sInitialParameter);
 
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    if(count1 == 1)
-    {
-      for(uint8_t i = 0x01; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, count2);
-        if(count2 == 255)
-        {
-            UsrAllLEDFadeOnBlue(5);
-            UsrAllLEDFadeOffBlue(5);          
-        }
-        if(count2 == 270)
-        {
-          UsrSetPWM(i, 255); 
-        } 
-      }
-      for(uint8_t i = 0x02; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, 0);
-      }
-      for(uint8_t i = 0x03; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, 0);
-      }      
-      UsrPWMUpdate();
-    }
-
-    if(count1 == 2)
-    {
-      for(uint8_t i = 0x01; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, 0);
-      }
-      for(uint8_t i = 0x02; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, count2);
-        if(count2 == 255)
-        {
-            UsrAllLEDFadeOnGreen(5);
-            UsrAllLEDFadeOffGreen(5);          
-        }
-        if(count2 == 270)
-        {
-          UsrSetPWM(i, 255); 
-        }     
-      }
-      for(uint8_t i = 0x03; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, 0);
-      }
-      UsrPWMUpdate();
-    }
-
-
-    if(count1 == 3)
-    {
-      for(uint8_t i = 0x01; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, 0);
-      }
-      for(uint8_t i = 0x02; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, 0);
-      }
-      for(uint8_t i = 0x03; i <= 0x24; i+=3)
-      {
-        UsrSetPWM(i, count2);
-        if(count2 == 255)
-        {
-            UsrAllLEDFadeOnRed(5);
-            UsrAllLEDFadeOffRed(5);          
-        }
-        if(count2 == 270)
-        {
-          UsrSetPWM(i, 255); 
-        }   
-      }
-      UsrPWMUpdate();
-    }
+    UsrSystemGeneral();
+   
   }
   /* USER CODE END 3 */
 }
@@ -236,7 +127,10 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_4;
+  RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -245,12 +139,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
